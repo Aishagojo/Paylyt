@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paylyt - Real-Time Crypto Rates</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    /* Background image - finance related */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1470&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #212529;
+    }
+    /* Dark overlay */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: -1;
+    }
+
+    /* Container with white background */
+    .main-container {
+      max-width: 900px;
+      margin: 3rem auto 4rem auto;
+      background-color: rgba(255 255 255 / 0.95);
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.3);
+      padding: 2.5rem 3rem;
+      text-align: center;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Dark mode styles */
+    body.dark-mode {
+      background: url('https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1470&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #f1f1f1;
+    }
+    body.dark-mode::before {
+      background-color: rgba(0, 0, 0, 0.75);
+    }
+    body.dark-mode .main-container {
+      background-color: rgba(30 30 30 / 0.9);
+      color: #f1f1f1;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+    }
+    body.dark-mode .btn-outline-primary {
+      color: #f1f1f1;
+      border-color: #f1f1f1;
+    }
+    body.dark-mode .btn-outline-primary:hover {
+      background-color: #f1f1f1;
+      color: #121212;
+    }
+
+    /* Navbar styles */
+    nav.navbar {
+      background-color: rgba(0, 0, 0, 0.7) !important;
+      backdrop-filter: blur(6px);
+    }
+    body.dark-mode nav.navbar {
+      background-color: rgba(20, 20, 20, 0.85) !important;
+    }
+
+    /* Currency cards */
+    #currencyContainer {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+    .currency-card {
+      flex: 1 1 180px;
+      min-width: 180px;
+      max-width: 220px;
+      background-color: #f8f9fa;
+      border-radius: 10px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      color: #212529;
+      text-align: center;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    body.dark-mode .currency-card {
+      background-color: rgba(60 60 60 / 0.85);
+      color: #f1f1f1;
+      box-shadow: 0 6px 15px rgba(255, 255, 255, 0.1);
+    }
+    .currency-card.offline {
+      opacity: 0.6;
+      filter: grayscale(60%);
+    }
+
+    .currency-code {
+      font-weight: 700;
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+    }
+    .currency-rate {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .currency-status {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: green;
+    }
+    .currency-status.offline {
+      color: #d9534f;
+    }
+
+    /* Buttons container */
+    .btn-group-lg > .btn {
+      min-width: 130px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark px-4">
+    <a class="navbar-brand" href="#">Paylyt</a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <div class="dropdown">
+        <button
+          class="btn btn-secondary dropdown-toggle position-relative"
+          id="notifBtn"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          Notifications
+          <span
+            id="notifCount"
+            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+            style="font-size: 0.7rem;"
+          >
+            0
+          </span>
+        </button>
+        <ul
+          id="notifList"
+          class="dropdown-menu dropdown-menu-end"
+          style="min-width: 250px"
+        >
+          <li class="dropdown-item">No notifications</li>
+        </ul>
+      </div>
+      <button id="darkToggle" class="btn btn-outline-light">🌙 Dark Mode</button>
+    </div>
+  </nav>
+
+  <main class="main-container">
+    <h1>Welcome to Paylyt</h1>
+    <p class="lead">
+      Your trusted real-time Bitcoin exchange rates in multiple currencies.
+    </p>
+
+    <div class="d-flex justify-content-center gap-3 mb-4 btn-group btn-group-lg" role="group">
+      <a href="register.html" class="btn btn-primary">Sign Up</a>
+      <a href="login.html" class="btn btn-outline-primary">Login</a>
+    </div>
+
+    <div id="currencyContainer" aria-live="polite" aria-atomic="true">
+      <!-- Currency cards inserted here dynamically -->
+    </div>
+  </main>
+
+  <footer class="bg-dark text-light py-3 text-center mt-auto">
+    &copy; 2025 Paylyt. All rights reserved.
+  </footer>
+
+  <script src="utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const currencies = [
+      { code: "USD", symbol: "$" },
+      { code: "EUR", symbol: "€" },
+      { code: "KES", symbol: "Ksh" },
+      { code: "NGN", symbol: "₦" },
+    ];
+
+    const container = document.getElementById("currencyContainer");
+
+    currencies.forEach(({ code, symbol }) => {
+      const card = document.createElement("div");
+      card.classList.add("currency-card");
+      card.id = `card-${code}`;
+
+      card.innerHTML = `
+        <div class="currency-code">${code}</div>
+        <div class="currency-rate" id="rate-${code}">Loading...</div>
+        <div class="currency-status" id="status-${code}">Fetching rate...</div>
+      `;
+
+      container.appendChild(card);
+    });
+
+    async function fetchRates() {
+      try {
+        const res = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur,kes,ngn"
+        );
+        if (!res.ok) throw new Error("API not reachable");
+
+        const data = await res.json();
+        currencies.forEach(({ code, symbol }) => {
+          const rateEl = document.getElementById(`rate-${code}`);
+          const statusEl = document.getElementById(`status-${code}`);
+          const card = document.getElementById(`card-${code}`);
+
+          if (data.bitcoin && data.bitcoin[code.toLowerCase()]) {
+            const rate = data.bitcoin[code.toLowerCase()];
+            rateEl.textContent = `${symbol} ${rate.toLocaleString()}`;
+            statusEl.textContent = "Online";
+            statusEl.classList.remove("offline");
+            card.classList.remove("offline");
+          } else {
+            rateEl.textContent = "N/A";
+            statusEl.textContent = "Offline";
+            statusEl.classList.add("offline");
+            card.classList.add("offline");
+          }
+        });
+      } catch (error) {
+        currencies.forEach(({ code }) => {
+          const rateEl = document.getElementById(`rate-${code}`);
+          const statusEl = document.getElementById(`status-${code}`);
+          const card = document.getElementById(`card-${code}`);
+
+          rateEl.textContent = "N/A";
+          statusEl.textContent = "Offline";
+          statusEl.classList.add("offline");
+          card.classList.add("offline");
+        });
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load dark mode from utils.js (you'll need to implement loadDarkMode, toggleDarkMode)
+      loadDarkMode();
+      document.getElementById("darkToggle").onclick = toggleDarkMode;
+
+     fetchRates();
+      setInterval(fetchRates, 30000);
+
+      loadNotifications(); // Implement in utils.js or inline later
+    });
+  </script>
+</body>
+</html>

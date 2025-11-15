@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Register | Paylyt</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      padding: 2rem;
+      background: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1470&q=80') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+    }
+    .form-container {
+      max-width: 400px;
+      background-color: rgba(0,0,0,0.7);
+      padding: 2rem;
+      border-radius: 8px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2 class="mb-4">Register</h2>
+    <form id="registerForm">
+      <div class="mb-3">
+        <label for="name" class="form-label">Full Name</label>
+        <input required type="text" class="form-control" id="name" name="name" placeholder="Your name" />
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email address</label>
+        <input required type="email" class="form-control" id="email" name="email" placeholder="you@example.com" />
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input required type="password" class="form-control" id="password" name="password" />
+      </div>
+      <!-- Removed role selection per your request -->
+      <button type="submit" class="btn btn-primary w-100">Register</button>
+    </form>
+    <div id="errorMsg" class="mt-3 text-danger"></div>
+  </div>
+
+  <script>
+    const registerForm = document.getElementById('registerForm');
+    const errorMsg = document.getElementById('errorMsg');
+
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      errorMsg.textContent = '';
+      const name = registerForm.name.value.trim();
+      const email = registerForm.email.value.trim();
+      const password = registerForm.password.value.trim();
+
+      // Default role: assign "client" (since no choice)
+      const role = 'client';
+
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, role }),
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Registration failed');
+        }
+
+        // Registration success: redirect to homepage with query param
+        window.location.href = 'index.html?registered=true';
+
+      } catch (error) {
+        errorMsg.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

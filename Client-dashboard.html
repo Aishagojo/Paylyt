@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        .dark-mode { background-color: #121212 !important; color: white !important; }
+        .dark-mode .card { background-color: #1f1f1f !important; color: white !important; }
+        .dark-mode input, .dark-mode textarea { background-color: #222 !important; color: white !important; border-color: #444 !important; }
+        .bitcoin-card { border-left: 5px solid #f7931a; }
+        .transaction-item { padding: 10px; border-bottom: 1px solid #ddd; }
+        .transaction-item.deposit { background-color: #d4edda; }
+        .transaction-item.withdrawal { background-color: #f8d7da; }
+        .dark-mode .transaction-item { background-color: #1f1f1f !important; }
+    </style>
+</head>
+<body class="container py-5">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3 mb-4">
+  <a class="navbar-brand" href="#">WorkHub</a>
+  <div class="ms-auto d-flex align-items-center">
+    <div class="dropdown me-3">
+      <button class="btn btn-secondary dropdown-toggle" id="notifBtn" data-bs-toggle="dropdown">
+        Notifications <span id="notifCount" class="badge bg-danger">0</span>
+      </button>
+      <ul id="notifList" class="dropdown-menu dropdown-menu-end"></ul>
+    </div>
+    <button id="darkToggle" class="btn btn-outline-light">🌙 Dark Mode</button>
+  </div>
+</nav>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card bitcoin-card bg-primary text-white p-4">
+      <h5>🪙 Bitcoin Balance</h5>
+      <h3 id="bitcoinBalance">0.00000000 BTC</h3>
+      <small class="text-light">Phase 3: Crypto Wallet</small>
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#depositModal">📥 Deposit</button>
+        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#withdrawModal">📤 Withdraw</button>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card bg-success text-white p-4">
+      <h5>💰 Total Earnings</h5>
+      <h3 id="fiatBalance">$0.00</h3>
+      <small>FIAT Currency</small>
+      <div id="btcPrice" class="mt-3 small">
+        <span>BTC Price: </span><span id="btcPriceValue">$0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card bg-info text-white p-4">
+      <h5>📊 Dashboard Stats</h5>
+      <div class="row">
+        <div class="col-md-4">
+          <strong>Active Jobs</strong><br>
+          <h4 id="activeJobsCount">0</h4>
+        </div>
+        <div class="col-md-4">
+          <strong>Completed Jobs</strong><br>
+          <h4 id="completedJobsCount">0</h4>
+        </div>
+        <div class="col-md-4">
+          <strong>Total Transactions</strong><br>
+          <h4 id="transactionCount">0</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="mb-4">Create Job</h2>
+<div class="card p-4 mb-5">
+    <input id="title" class="form-control mb-2" placeholder="Job Title">
+    <textarea id="description" class="form-control mb-2" placeholder="Job Description"></textarea>
+    <input id="amount_fiat" class="form-control mb-2" placeholder="Amount (FIAT)">
+    <input id="amount_btc" class="form-control mb-2" placeholder="Amount (BTC)">
+    <input id="deadline" class="form-control mb-3" type="date">
+    <button class="btn btn-primary w-100" onclick="createJob()">Create Job</button>
+</div>
+
+<h2>Your Jobs</h2>
+<div id="jobList" class="mt-3"></div>
+
+<!-- Transaction History Modal -->
+<div class="modal fade" id="transactionHistoryModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📋 Transaction History</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="transactionList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Deposit Modal -->
+<div class="modal fade" id="depositModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📥 Deposit Bitcoin</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Your Deposit Address:</p>
+        <div class="input-group mb-3">
+          <input type="text" id="depositAddress" class="form-control" readonly placeholder="Loading...">
+          <button class="btn btn-primary" onclick="copyToClipboard('depositAddress')">Copy</button>
+        </div>
+        <p class="text-muted small">Send Bitcoin to this address to deposit into your wallet.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div class="modal fade" id="withdrawModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📤 Withdraw Bitcoin</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Bitcoin Amount (BTC)</label>
+          <input type="number" id="withdrawAmount" class="form-control" placeholder="0.00000000" step="0.00000001" min="0">
+          <small class="text-muted">Available: <span id="availableBTC">0</span> BTC</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Recipient Address</label>
+          <input type="text" id="withdrawAddress" class="form-control" placeholder="Bitcoin address">
+        </div>
+        <button class="btn btn-primary w-100" onclick="submitWithdrawal()">Withdraw</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="utils.js"></script>
+<script>
+async function createJob() {
+    const job = {
+        title: title.value,
+        description: description.value,
+        amount_fiat: amount_fiat.value,
+        amount_btc: amount_btc.value,
+        deadline: deadline.value,
+        milestones: []
+    };
+    await apiRequest("/jobs", "POST", job);
+    alert("Job Created!");
+    loadJobs();
+}
+
+async function loadBitcoinBalance() {
+    try {
+        const balance = await apiRequest("/wallet/balance");
+        const bitcoinBalanceEl = document.getElementById("bitcoinBalance");
+        if (bitcoinBalanceEl) {
+            bitcoinBalanceEl.innerText = (balance.btc || 0).toFixed(8) + " BTC";
+        }
+        const fiatBalanceEl = document.getElementById("fiatBalance");
+        if (fiatBalanceEl) {
+            fiatBalanceEl.innerText = "$" + (balance.fiat || 0).toFixed(2);
+        }
+        
+        // Update available BTC in withdrawal modal
+        const availableBTC = document.getElementById("availableBTC");
+        if (availableBTC) {
+            availableBTC.innerText = (balance.btc || 0).toFixed(8);
+        }
+
+        // Get BTC price
+        const priceRes = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+        const priceData = await priceRes.json();
+        const btcPrice = priceData.bitcoin.usd;
+        const btcPriceValue = document.getElementById("btcPriceValue");
+        if (btcPriceValue) {
+            btcPriceValue.innerText = "$" + btcPrice.toLocaleString();
+        }
+    } catch (error) {
+        console.error("Error loading balance:", error);
+    }
+}
+
+async function loadDepositAddress() {
+    try {
+        const address = await apiRequest("/wallet/deposit-address");
+        const depositAddress = document.getElementById("depositAddress");
+        if (depositAddress) {
+            depositAddress.value = address.address || "Not available";
+        }
+    } catch (error) {
+        console.error("Error loading deposit address:", error);
+    }
+}
+
+async function submitWithdrawal() {
+    const amount = document.getElementById("withdrawAmount").value;
+    const address = document.getElementById("withdrawAddress").value;
+    
+    if (!amount || !address) {
+        alert("Please fill in all fields");
+        return;
+    }
+    
+    try {
+        const result = await apiRequest("/wallet/withdraw", "POST", { amount: parseFloat(amount), address });
+        alert("Withdrawal submitted! Transaction ID: " + result.txId);
+        document.getElementById("withdrawAmount").value = "";
+        document.getElementById("withdrawAddress").value = "";
+        bootstrap.Modal.getInstance(document.getElementById("withdrawModal")).hide();
+        loadBitcoinBalance();
+        loadTransactionHistory();
+    } catch (error) {
+        alert("Withdrawal failed: " + error.message);
+    }
+}
+
+async function loadTransactionHistory() {
+    try {
+        const transactions = await apiRequest("/wallet/transactions");
+        const transactionList = document.getElementById("transactionList");
+        const transactionCount = document.getElementById("transactionCount");
+        
+        if (transactionCount) {
+            transactionCount.innerText = transactions.length;
+        }
+        
+        if (transactionList) {
+            if (transactions.length === 0) {
+                transactionList.innerHTML = "<p class='text-muted'>No transactions yet.</p>";
+            } else {
+                transactionList.innerHTML = transactions.map(tx => `
+                    <div class="transaction-item ${tx.type}">
+                        <div class="d-flex justify-content-between">
+                            <strong>${tx.type === "deposit" ? "📥 Deposit" : "📤 Withdrawal"}</strong>
+                            <span class="badge ${tx.type === "deposit" ? "bg-success" : "bg-danger"}">${tx.amount} BTC</span>
+                        </div>
+                        <small class="text-muted">
+                            ${new Date(tx.date).toLocaleString()}<br>
+                            Status: ${tx.status}
+                        </small>
+                    </div>
+                `).join("");
+            }
+        }
+    } catch (error) {
+        console.error("Error loading transactions:", error);
+    }
+}
+
+async function loadJobs() {
+    const jobs = await apiRequest("/jobs/my");
+    const activeJobsCount = document.getElementById("activeJobsCount");
+    const completedJobsCount = document.getElementById("completedJobsCount");
+    
+    if (activeJobsCount) {
+        activeJobsCount.innerText = jobs.filter(j => j.status !== "completed" && j.status !== "cancelled").length;
+    }
+    if (completedJobsCount) {
+        completedJobsCount.innerText = jobs.filter(j => j.status === "completed").length;
+    }
+    
+    jobList.innerHTML = jobs.map(job => `
+        <div class="card p-4 mb-4">
+            <h4>${job.title}</h4>
+            <p>${job.description}</p>
+            <strong>Applicants:</strong>
+            <ul>
+                ${
+                    job.applicants.length === 0
+                    ? "<p>No applicants yet.</p>"
+                    : job.applicants.map(a => `
+                        <li>
+                            ${a.freelancer.name} – "${a.proposal}"
+                            <button class="btn btn-sm btn-success ms-2"
+                                onclick="acceptFreelancer('${job._id}', '${a.freelancer._id}')">
+                                Accept
+                            </button>
+                        </li>
+                    `).join("")
+                }
+            </ul>
+            <hr>
+            <div>
+                <p>Status: <strong>${job.status}</strong></p>
+                ${
+                    job.status === "submitted" ? 
+                    `<button class="btn btn-warning" onclick="approveCompletion('${job._id}')">Approve Completion</button>` 
+                    : ""
+                }
+                ${
+                    job.status === "approved" ?
+                    `<button class="btn btn-success mt-2" onclick="releasePayment('${job._id}')">Release Payment</button>`
+                    : ""
+                }
+            </div>
+        </div>
+    `).join("");
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadDarkMode();
+    const btn = document.getElementById("darkToggle");
+    if (btn) btn.onclick = toggleDarkMode;
+    loadBitcoinBalance();
+    loadDepositAddress();
+    loadTransactionHistory();
+    loadJobs();
+    loadNotifications();
+    setInterval(loadBitcoinBalance, 10000);
+    setInterval(loadTransactionHistory, 30000);
+});
+</script>
+</body>
+</html>
